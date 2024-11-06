@@ -9,11 +9,11 @@
         long _lastTick;
         int _sequence;
 
-        SpinLock _spinLock;
+        //SpinLock _spinLock;
 
         public CustomIdGenerator(int workerIndex = 0)
         {
-            _spinLock = new SpinLock(false);
+            //_spinLock = new SpinLock(false);
 
             var workerId = Provider.GetWorkerId(workerIndex);
 
@@ -25,9 +25,6 @@
         {
             var ticks = DateTime.UtcNow.Ticks;
 
-            var isLocked = false;
-            _spinLock.Enter(ref isLocked);
-
             if (ticks > _lastTick)
                 UpdateTimeSequence(ticks);
             else if (_sequence == 65535) // 2^16 - 1.....increment ticks because of rollover
@@ -38,9 +35,6 @@
             var a = _timeStamp;
             var b = _timeStampMasked;
 
-            if (isLocked)
-                _spinLock.Exit();
-
             return new CustomId(a, b, _workerId, _processId | sequence);
         }
 
@@ -50,9 +44,6 @@
                 throw new ArgumentOutOfRangeException(nameof(count));
 
             var ticks = DateTime.UtcNow.Ticks;
-
-            var isLocked = false;
-            _spinLock.Enter(ref isLocked);
 
             if (ticks > _lastTick)
                 UpdateTimeSequence(ticks);
@@ -65,10 +56,6 @@
 
                 ids[i] = new CustomId(_timeStamp, _timeStampMasked, _workerId, _processId | _sequence++);
             }
-
-            if (isLocked)
-                _spinLock.Exit();
-
             return new ArraySegment<CustomId>(ids, index, count);
         }
 
